@@ -6,7 +6,7 @@ type Slot = 'a' | 'b';
 type BufMsg = { s: Slot; t: string; at: number };
 const OPEN = 1;
 const JOIN_DEADLINE_MS = 90_000, GRACE_MS = 30_000, MAX_LIFE_MS = 2 * 3600_000;
-const MAX_TEXT = 1000, BUFFER = 30, MAX_FRAME = 4096;
+const MAX_TEXT = 1000, BUFFER = 30, MAX_FRAME = 32_768;
 const CATEGORIES = new Set(['harassment', 'threat', 'sexual', 'childSafety', 'spam', 'scam', 'hate', 'selfHarm', 'illegal', 'other']);
 
 /** One two-person room. Messages are relayed, never stored, except a short rolling buffer kept only so a report can include context. */
@@ -66,7 +66,7 @@ export class Room extends DurableObject<Env> {
       const buf = (await this.ctx.storage.get<BufMsg[]>('buf')) ?? [];
       await this.ctx.storage.put('buf', [...buf, { s: slot, t: text, at: now }].slice(-BUFFER));
     } else if (m.type === 'signal') { // WebRTC offer/answer/ICE relay for audio and video rooms; the media itself never passes through here
-      if ((await this.ctx.storage.get<string>('mode')) === 'text' || !peer || typeof (m as { data?: unknown }).data !== 'object' || message.length > 12_000) return;
+      if ((await this.ctx.storage.get<string>('mode')) === 'text' || !peer || typeof (m as { data?: unknown }).data !== 'object' || message.length > 32_768) return;
       const now = Date.now(), recent = (this.signals.get(slot) ?? []).filter(t => now - t < 10_000);
       if (recent.length >= 80) return; this.signals.set(slot, [...recent, now]);
       this.send(peer, { type: 'signal', data: (m as { data: unknown }).data });

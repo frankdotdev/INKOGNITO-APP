@@ -15,7 +15,13 @@ export default function Call({ searchParams }: { searchParams: Promise<{ mode?: 
       onState: s => { setState(s); if (s === 'searching') { setSecs(0); setMic(true); setCam(true); } },
       onMessage: () => {}, onTyping: () => {}, onNotice: t => { setNotice(t); setTimeout(() => setNotice(''), 4000); },
       onLocalStream: s => { if (local.current) local.current.srcObject = s; },
-      onRemoteStream: s => { if (remote.current) remote.current.srcObject = s; setHasRemote(!!s); },
+      onRemoteStream: s => {
+        if (remote.current) {
+          remote.current.srcObject = s;
+          if (s) { remote.current.play().catch(() => {}); }
+        }
+        setHasRemote(!!s);
+      },
     }, mode);
     chat.current = c; c.join(); return () => c.destroy();
   }, [mode]);
