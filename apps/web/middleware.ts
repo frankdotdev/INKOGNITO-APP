@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 function csp(nonce: string) {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://vercel.live`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https:",
     "font-src 'self'",
@@ -11,7 +11,7 @@ function csp(nonce: string) {
     "connect-src 'self' https: wss: blob: stun: turn: turns:",
     "worker-src 'self'",
     "manifest-src 'self'",
-    "frame-src https://challenges.cloudflare.com",
+    "frame-src https://challenges.cloudflare.com https://vercel.live",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
