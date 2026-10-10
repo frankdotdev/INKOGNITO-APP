@@ -1,0 +1,13 @@
+# Random audio and video
+**Built, but switched off by default.** Do not switch it on until the conditions at the bottom are met.
+
+- **How it works:** the same Worker, matchmaker and room as text chat, with one queue per mode so modes never mix. The room only relays WebRTC signalling (offer, answer, ICE). The audio and video travel directly between the two phones, or through Cloudflare's TURN relay when a direct path is blocked. Calls are never recorded or stored by us.
+- **Switches:** `random_audio_enabled` and `random_video_enabled` in `private.platform_config` (default off). Turn on with `insert into private.platform_config values ('random_video_enabled', '1') on conflict (key) do update set value = excluded.value;`. The Audio and Video cards only appear in the app when their switch is on.
+- **18+:** audio and video need a recorded "I am 18 or older" confirmation (`confirm_adult`), enforced by the Worker, which also refuses the ICE-server request without it. **This is a self-declaration, not age verification.** Anyone can tick the box. Real age assurance needs a third-party provider and legal advice, and is the main reason I recommend not enabling video at launch.
+- **TURN:** set `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN` as Worker secrets (Cloudflare Realtime TURN key). Without them the Worker offers STUN only. Cloudflare's free tier includes 1,000 GB a month of TURN/SFU traffic, then $0.05 per GB, so video can get expensive if it becomes popular.
+- **Safety:** Report, Block, Next, Leave, mute and camera-off are always on screen. A report in an audio or video call carries no transcript (there is none) and no recording, so moderators have nothing to look at: a report is a signal that raises the person's report count and blocks them for the reporter, nothing more. That is a real limit of live video moderation.
+- **Camera and microphone:** the site allows its own camera and microphone (`Permissions-Policy`). If access is blocked, the call ends and the other person is not told why.
+- **Tested:** the Worker (mode separation, gates, signalling relay, size limits, ICE endpoint, session mode recording) in `cloudflare/workers/random/e2e.mjs`, and the database gates in the SQL suite. **Not tested: the browser WebRTC code, camera and microphone handling, TURN with real credentials, or a real call between two phones.** Expect to debug it on devices.
+
+## Do not enable until
+Moderators can review reports around the clock or at set hours you can state publicly; you have a procedure for reports involving minors and a legal view on your duties; you've decided whether to add real age verification; and you've tested calls between phones on mobile data and Wi-Fi in the countries you care about.

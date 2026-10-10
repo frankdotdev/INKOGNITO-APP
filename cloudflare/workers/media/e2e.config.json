@@ -1,0 +1,17 @@
+{
+ "fake": "fake-supabase.mjs",
+ "port": 8798,
+ "flags": [
+  "--test-scheduled"
+ ],
+ "vars": {
+  "SUPABASE_URL": "http://127.0.0.1:54398",
+  "SUPABASE_ANON_KEY": "anon-test",
+  "SCAN_PROVIDER": "openai",
+  "SCAN_BASE_URL": "http://127.0.0.1:54398/scan"
+ },
+ "secrets": {
+  "SUPABASE_SERVICE_KEY": "service-test",
+  "OPENAI_API_KEY": "sk-test"
+ }
+}

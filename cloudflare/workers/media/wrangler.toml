@@ -1,0 +1,21 @@
+name = "inkognito-media"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Per environment. Secret: `wrangler secret put SUPABASE_SERVICE_KEY` (service_role key).
+[vars]
+SUPABASE_URL = ""
+SUPABASE_ANON_KEY = ""
+ALLOWED_ORIGINS = "http://localhost:3000"
+# Image scanning. Set SCAN_PROVIDER = "openai" and `wrangler secret put OPENAI_API_KEY` to scan every upload (images are sent to OpenAI's moderation API).
+# Leave it empty to rely on the moderator review queue only. This does NOT replace Cloudflare's CSAM Scanning Tool, which matches known abuse images.
+SCAN_PROVIDER = ""
+SCAN_REVIEW_THRESHOLD = "0.5"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "inkognito-media"
+
+# Deletes objects whose post is gone, moderated or expired, and uploads that were never attached.
+[triggers]
+crons = ["*/15 * * * *"]

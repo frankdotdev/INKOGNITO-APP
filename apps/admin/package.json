@@ -1,0 +1,3 @@
+{ "name": "@inkognito/admin", "private": true, "scripts": { "dev": "next dev -p 3001", "build": "next build" },
+  "dependencies": { "next": "^15.0.0", "react": "^19.0.0", "react-dom": "^19.0.0", "@supabase/supabase-js": "^2.45.0" },
+  "devDependencies": { "typescript": "^5.5.0", "@types/react": "^19.0.0", "@types/node": "^22.0.0" } }

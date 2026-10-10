@@ -1,0 +1,1 @@
+try{var d=document.documentElement;d.dataset.theme=localStorage.getItem('ink-theme')||'obsidian';d.dataset.motion=localStorage.getItem('ink-motion')||''}catch(e){document.documentElement.dataset.theme='obsidian'}

@@ -1,0 +1,10 @@
+name = "inkognito-dm"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Per environment. Secrets (never commit): wrangler secret put SUPABASE_SERVICE_KEY / DM_DATA_KEY
+#   DM_DATA_KEY = 32 random bytes, base64 (`openssl rand -base64 32`). Back it up: without it stored messages cannot be read.
+[vars]
+SUPABASE_URL = ""
+SUPABASE_ANON_KEY = ""
+ALLOWED_ORIGINS = "http://localhost:3000"

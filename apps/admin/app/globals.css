@@ -1,0 +1,26 @@
+:root{--bg:#0b0c0e;--panel:#121417;--panel2:#1a1d21;--line:#272b31;--text:#e6e8eb;--dim:#9aa1ab;--mute:#6b727c;--accent:#5b9bd5;--ok:#3dab7a;--warn:#e0a33a;--crit:#e5484d}
+*{box-sizing:border-box;margin:0}html,body{background:var(--bg);color:var(--text);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--accent);text-decoration:none}button,input,select,textarea{font:inherit;color:inherit}
+.layout{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+.nav{border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
+.nav .brand{font-weight:700;letter-spacing:.02em;padding:0 8px 4px}.nav .env{font-size:11px;color:var(--mute);padding:0 8px 16px;text-transform:uppercase;letter-spacing:.08em}
+.nav a{padding:7px 8px;border-radius:6px;color:var(--dim)}.nav a:hover,.nav a[aria-current=page]{background:var(--panel2);color:var(--text)}
+.nav .who{margin-top:auto;font-size:12px;color:var(--mute);padding:8px}
+main{padding:20px 24px;max-width:1280px;width:100%}h1{font-size:18px;font-weight:600;margin-bottom:16px}h2{font-size:13px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}.metric .k{font-size:12px;color:var(--dim)}.metric .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.metric.warn{border-color:var(--warn)}.metric.crit{border-color:var(--crit)}.metric .s{font-size:12px;margin-top:2px}.s.warn{color:var(--warn)}.s.crit{color:var(--crit)}.s.ok{color:var(--ok)}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel2)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}.cell{max-width:420px;overflow-wrap:anywhere}.nowrap{white-space:nowrap}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}.btn:hover{border-color:var(--mute)}.btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#06121f}.btn.danger{border-color:var(--crit);color:var(--crit)}.btn.sm{padding:3px 8px;font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tabs{display:flex;gap:4px;margin-bottom:12px}.tab{padding:5px 12px;border-radius:6px;border:1px solid var(--line);background:none;cursor:pointer;color:var(--dim)}.tab[aria-selected=true]{background:var(--panel2);color:var(--text)}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}.badge.p2{border-color:var(--crit);color:var(--crit)}.badge.p1{border-color:var(--warn);color:var(--warn)}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}input:focus,select:focus,textarea:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.err{color:var(--crit)}.dim{color:var(--dim)}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50}.dialog{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;width:min(460px,92vw);display:grid;gap:12px}
+.center{min-height:100vh;display:grid;place-items:center}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;width:min(380px,92vw);display:grid;gap:12px}
+.kv{display:grid;grid-template-columns:180px 1fr;gap:6px 12px}.kv dt{color:var(--dim)}.kv dd{margin:0}
+.bubble{padding:4px 8px;border-radius:6px;background:var(--panel2);margin:2px 0;overflow-wrap:anywhere}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.nav{position:static;height:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}.nav .who{margin:0}}

@@ -1,0 +1,17 @@
+name = "inkognito-ai"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Per environment. Secrets (never commit): wrangler secret put <NAME>
+#   SUPABASE_SERVICE_KEY   service_role key
+#   GROQ_API_KEY           primary provider
+#   GEMINI_API_KEY         fallback provider
+#   AI_DATA_KEY            32 random bytes, base64 (encrypts all conversations; losing it makes history unreadable)
+[vars]
+SUPABASE_URL = ""
+SUPABASE_ANON_KEY = ""
+ALLOWED_ORIGINS = "http://localhost:3000"
+# Model ids change often. Check console.groq.com/docs/models and ai.google.dev/gemini-api/docs/models before deploying.
+AI_GROQ_MODEL = "llama-3.3-70b-versatile"
+AI_GEMINI_MODEL = "gemini-2.0-flash"
+

@@ -1,0 +1,1 @@
+{ "fake": "fake-supabase.mjs", "port": 8799, "vars": { "SUPABASE_URL": "http://127.0.0.1:54399", "SUPABASE_ANON_KEY": "anon-test" }, "secrets": { "SUPABASE_SERVICE_KEY": "service-test", "ROOM_SECRET": "test-room-secret-0123456789abcdef0123456789" } }

@@ -1,0 +1,19 @@
+name = "inkognito-billing"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Per environment. Secrets (never commit): wrangler secret put SUPABASE_SERVICE_KEY / PAYSTACK_SECRET_KEY
+# Start with Paystack TEST keys. Create two monthly plans in the Paystack dashboard and put their codes below:
+#   USD plan at 3.00 (needs USD enabled on your Paystack account) and NGN plan at 4,500.00.
+# Paystack webhook URL to configure: https://<this-worker>/billing/webhook
+[vars]
+SUPABASE_URL = ""
+SUPABASE_ANON_KEY = ""
+ALLOWED_ORIGINS = "http://localhost:3000"
+SITE_URL = "http://localhost:3000"
+# Paystack requires an email. People never give us one: each order gets <reference>@<this domain>, which receives nothing.
+PAYMENT_EMAIL_DOMAIN = "pay.example.com"
+PRICE_USD_CENTS = "300"
+PRICE_NGN_KOBO = "450000"
+PLAN_CODE_USD = ""
+PLAN_CODE_NGN = ""

@@ -1,0 +1,1 @@
+{ "fake": "fake.mjs", "port": 8796, "vars": { "SUPABASE_URL": "http://127.0.0.1:54396", "SUPABASE_ANON_KEY": "anon-test", "PAYSTACK_BASE_URL": "http://127.0.0.1:54396/paystack", "PLAN_CODE_USD": "PLN_usd", "PLAN_CODE_NGN": "PLN_ngn", "PAYMENT_EMAIL_DOMAIN": "pay.example.com" }, "secrets": { "SUPABASE_SERVICE_KEY": "service-test", "PAYSTACK_SECRET_KEY": "sk_test_secret" } }

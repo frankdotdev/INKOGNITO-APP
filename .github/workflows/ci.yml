@@ -1,0 +1,32 @@
+name: ci
+on: { push: { branches: [main] }, pull_request: {} }
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres: { image: 'postgres:16', env: { POSTGRES_PASSWORD: postgres }, ports: ['5432:5432'], options: >- --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10 }
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres bash supabase/tests/run.sh
+  web:
+    runs-on: ubuntu-latest
+    env: { NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321', NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy, NEXT_PUBLIC_SITE_URL: 'http://localhost:3000', NEXT_TELEMETRY_DISABLED: '1' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm install --no-audit --no-fund
+      - run: npx tsc --noEmit -p apps/web
+      - run: npx tsc --noEmit -p apps/admin
+      - run: node apps/web/test/sw.test.mjs
+      - run: npm run build -w apps/web
+      - run: npm run build -w apps/admin
+  workers:
+    runs-on: ubuntu-latest
+    strategy: { fail-fast: false, matrix: { worker: [random, media, ai, billing, dm, push] } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node cloudflare/workers/run-e2e.mjs ${{ matrix.worker }}

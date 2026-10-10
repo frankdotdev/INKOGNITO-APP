@@ -1,0 +1,1 @@
+{ "fake": "fake.mjs", "port": 8797, "vars": { "SUPABASE_URL": "http://127.0.0.1:54397", "SUPABASE_ANON_KEY": "anon-test", "GROQ_BASE_URL": "http://127.0.0.1:54397/openai/v1", "GEMINI_BASE_URL": "http://127.0.0.1:54397" }, "secrets": { "SUPABASE_SERVICE_KEY": "service-test", "GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "gemini-test", "AI_DATA_KEY": "$RANDOM_B64_32" } }

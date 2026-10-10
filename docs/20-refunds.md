@@ -1,0 +1,6 @@
+# Refunds
+- **Who:** a finance admin or super admin signed in with MFA, from Orders > Paid > Refund, with a written reason. Enforced three times: the billing Worker checks the admin session and MFA with Supabase, the database re-checks the admin's role, and every step is written to the audit log.
+- **Policy (change in `0018_refunds.sql` and `refund_window_days`):** within 30 days of payment. A refund removes the name and the Plus month that payment bought, and stops renewals. A refund that Paystack rejects changes nothing.
+- **Flow:** the order becomes `refund_pending`; Paystack is asked to refund; renewals are stopped; when Paystack's `refund.processed` webhook arrives (or the API reports it processed at once) the purchase is taken back and the order becomes `refunded`; `refund.failed` returns it to `paid`.
+- **Needs:** the admin origin in the billing Worker's `ALLOWED_ORIGINS`; `NEXT_PUBLIC_BILLING_URL` in the admin app.
+- **Tested:** SQL suite (roles, reason, window, double refund, failure path, what is taken back, audit) and Worker end to end against a Paystack stand-in. **Not tested against real Paystack**, including the exact `refund.processed` payload field names; check them in test mode and adjust.

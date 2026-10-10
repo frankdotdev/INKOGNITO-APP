@@ -1,0 +1,65 @@
+const BASE = 'ws://localhost:8799';
+const log = [];
+const assert = (c, m) => { if (!c) { console.log('FAIL:', m); process.exit(1); } else console.log('ok  :', m); };
+const open = (url, protos) => new Promise((res, rej) => { const ws = new WebSocket(url, protos); ws.inbox = []; ws.waiters = [];
+  ws.onmessage = e => { const m = JSON.parse(e.data); const w = ws.waiters.findIndex(x => x.t === m.type); if (w >= 0) ws.waiters.splice(w, 1)[0].r(m); else ws.inbox.push(m); };
+  ws.onopen = () => res(ws); ws.onerror = () => rej(new Error('open failed ' + url)); });
+const next = (ws, type, ms = 8000) => { const i = ws.inbox.findIndex(m => m.type === type); if (i >= 0) return Promise.resolve(ws.inbox.splice(i, 1)[0]);
+  return new Promise((r, j) => { const w = { t: type, r: m => { clearTimeout(t); r(m); } }; const t = setTimeout(() => { const i = ws.waiters.indexOf(w); if (i >= 0) ws.waiters.splice(i, 1); j(new Error('timeout waiting for ' + type)); }, ms); ws.waiters.push(w); }); };
+const health = await fetch('http://localhost:8799/health').then(r => r.text()); assert(health === 'ok', 'health');
+assert((await fetch('http://localhost:8799/match?mode=text')).status === 426, 'plain HTTP rejected');
+await open(`${BASE}/match?mode=text`, ['ink', 'bearer.bad-token']).then(() => { }, () => { });
+const bad = await new Promise(r => { const w = new WebSocket(`${BASE}/match?mode=text`, ['ink', 'bearer.bad-token']); w.onerror = () => r('rejected'); w.onopen = () => r('opened'); }); assert(bad === 'rejected', 'bad token rejected');
+const badMode = await new Promise(r => { const w = new WebSocket(`${BASE}/match?mode=hologram`, ['ink', 'bearer.token-a']); w.onerror = () => r('rejected'); w.onopen = () => r('opened'); }); assert(badMode === 'rejected', 'unknown mode rejected');
+const a = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-a']); assert((await next(a, 'searching')).type === 'searching', 'A searching');
+const b = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-b']);
+const ma = await next(a, 'matched'), mb = await next(b, 'matched'); assert(ma.token && mb.token && ma.token !== mb.token, 'both matched with different room tokens');
+assert(!/[0-9a-f]{8}-aaaaaaaa|bbbbbbbb/.test(JSON.stringify([ma, mb])), 'tokens carry no identity ids');
+const ra = await open(`${BASE}/room`, ['ink', 'room.' + ma.token]); assert((await next(ra, 'waiting_partner')).type, 'A waiting for partner');
+const rb = await open(`${BASE}/room`, ['ink', 'room.' + mb.token]);
+await next(ra, 'ready'); await next(rb, 'ready'); assert(true, 'both ready');
+ra.send(JSON.stringify({ type: 'msg', text: 'hello from A' })); assert((await next(rb, 'msg')).text === 'hello from A', 'A -> B message relayed');
+rb.send(JSON.stringify({ type: 'typing', on: true })); assert((await next(ra, 'typing')).on === true, 'typing relayed');
+for (let i = 0; i < 8; i++) rb.send(JSON.stringify({ type: 'msg', text: 'spam ' + i }));
+assert((await next(rb, 'slow_down')).type === 'slow_down', 'rate limit kicks in');
+const forged = await new Promise(r => { const w = new WebSocket(`${BASE}/room`, ['ink', 'room.' + ma.token.slice(0, -3) + 'abc']); w.onerror = () => r('rejected'); w.onopen = () => r('opened'); }); assert(forged === 'rejected', 'forged room token rejected');
+rb.send(JSON.stringify({ type: 'report', category: 'harassment' })); await next(rb, 'reported'); const e1 = await next(rb, 'ended'), e2 = await next(ra, 'ended');
+assert(e1.reason === 'you_left' && e2.reason === 'peer_left', 'report ends the chat for both with the right reasons');
+await new Promise(r => setTimeout(r, 500));
+const calls = await fetch('http://localhost:54399/calls').then(r => r.json());
+const rep = calls.find(c => c.fn === 'random_file_report'); assert(rep && rep.args.p_category === 'harassment' && rep.args.p_reporter === 'bbbbbbbb-0000-0000-0000-00000000000b' && rep.args.p_transcript.length >= 1, 'report filed with reporter identity and transcript');
+assert(calls.some(c => c.fn === 'random_open_session') && calls.some(c => c.fn === 'random_close_session'), 'session opened and closed in the database');
+const gone = await new Promise(r => { const w = new WebSocket(`${BASE}/room`, ['ink', 'room.' + ma.token]); w.onerror = () => r('rejected'); w.onopen = () => r('opened'); }); assert(gone === 'rejected', 'ended room cannot be rejoined');
+// leave path + no instant rematch
+const a2 = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-a']); const b2 = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-b']);
+const r1 = await Promise.race([next(a2, 'matched', 2500).then(() => 'matched', () => 'no-match'), new Promise(r => setTimeout(() => r('no-match'), 2600))]); assert(r1 === 'no-match', 'same pair is not rematched immediately');
+a2.close(); b2.close();
+// ---- audio and video ----
+const ok = assert;
+const rej = (url, protos) => new Promise(r => { const w = new WebSocket(url, protos); w.onerror = () => r('rejected'); w.onopen = () => { w.close(); r('opened'); }; });
+ok((await rej(`${BASE}/match?mode=audio`, ['ink', 'bearer.token-a'])) === 'rejected', 'audio is refused while switched off');
+ok((await rej(`${BASE}/match?mode=video`, ['ink', 'bearer.token-c'])) === 'rejected', 'video is refused until the person has confirmed they are 18+');
+ok((await rej(`${BASE}/match?mode=hologram`, ['ink', 'bearer.token-a'])) === 'rejected', 'unknown mode refused');
+const va = await open(`${BASE}/match?mode=video`, ['ink', 'bearer.token-a']), tx = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-b']);
+const noCross = await Promise.race([next(va, 'matched', 2000).then(() => 'matched', () => 'no-match'), new Promise(r => setTimeout(() => r('no-match'), 2100))]); ok(noCross === 'no-match', 'a video seeker is never matched with a text seeker');
+const vb = await open(`${BASE}/match?mode=video`, ['ink', 'bearer.token-b']);
+const mva = await next(va, 'matched'), mvb = await next(vb, 'matched'); tx.close();
+const rva = await open(`${BASE}/room`, ['ink', 'room.' + mva.token]); await next(rva, 'waiting_partner'); const rvb = await open(`${BASE}/room`, ['ink', 'room.' + mvb.token]);
+const readyA = await next(rva, 'ready'), readyB = await next(rvb, 'ready'); ok(readyA.mode === 'video' && readyB.mode === 'video' && readyA.initiator !== readyB.initiator, 'video room: both told the mode, exactly one makes the offer');
+rva.send(JSON.stringify({ type: 'signal', data: { sdp: { type: 'offer', sdp: 'v=0...' } } })); ok((await next(rvb, 'signal')).data.sdp.type === 'offer', 'WebRTC signalling is relayed to the other person');
+rvb.send(JSON.stringify({ type: 'signal', data: { candidate: { candidate: 'x'.repeat(13000) } } })); rvb.send(JSON.stringify({ type: 'signal', data: { candidate: { candidate: 'ok' } } }));
+ok((await next(rva, 'signal')).data.candidate.candidate === 'ok', 'oversized signalling messages are dropped');
+const st2 = await fetch('http://localhost:54399/calls').then(r => r.json()); ok(st2.filter(c => c.fn === 'random_open_session').some(c => c.args.p_mode === 'video'), 'the video session is recorded with its mode');
+rva.send(JSON.stringify({ type: 'report', category: 'sexual' })); await next(rva, 'reported'); ok((await next(rvb, 'ended')).reason === 'peer_left', 'reporting in a video room ends the call for both');
+// signalling is ignored in text rooms
+const t1 = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-a']); const t2 = await open(`${BASE}/match?mode=text`, ['ink', 'bearer.token-c']);
+const mt1 = await next(t1, 'matched', 8000).catch(() => null);
+if (mt1) { const mt2 = await next(t2, 'matched'); const q1 = await open(`${BASE}/room`, ['ink', 'room.' + mt1.token]), q2 = await open(`${BASE}/room`, ['ink', 'room.' + mt2.token]); await next(q1, 'ready'); await next(q2, 'ready');
+  q1.send(JSON.stringify({ type: 'signal', data: { sdp: 'x' } })); q1.send(JSON.stringify({ type: 'msg', text: 'after' })); const first = await Promise.race([next(q2, 'signal', 1500).then(() => 'signal', () => 'none'), next(q2, 'msg', 1500).then(() => 'msg', () => 'none')]); ok(first === 'msg', 'signalling is ignored in text rooms'); }
+// ICE servers
+const ice = (o = {}) => fetch('http://localhost:8799/rtc/ice?mode=' + (o.mode ?? 'video'), { headers: { ...(o.token ? { Authorization: 'Bearer ' + o.token } : {}), ...(o.origin ? { Origin: o.origin } : {}) } });
+ok((await ice()).status === 401 && (await ice({ token: 'bad' })).status === 401, 'ICE servers need sign-in');
+ok((await ice({ token: 'token-c' })).status === 403 && (await ice({ token: 'token-a', mode: 'audio' })).status === 403 && (await ice({ token: 'token-a', mode: 'text' })).status === 400, 'ICE servers follow the same gates as joining');
+const iceOk = await (await ice({ token: 'token-a', origin: 'http://localhost:3000' })).json(); ok(iceOk.iceServers[0].urls[0] === 'stun:stun.cloudflare.com:3478' && iceOk.relay === false, 'without TURN keys the Worker offers STUN only');
+ok((await ice({ token: 'token-a', origin: 'https://evil.example' })).status === 403, 'ICE servers refuse foreign origins');
+console.log('ALL PASSED'); process.exit(0);

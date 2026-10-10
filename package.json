@@ -1,0 +1,16 @@
+{
+  "name": "inkognito",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/admin",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p apps/web && tsc --noEmit -p apps/admin",
+    "test:sql": "bash supabase/tests/run.sh",
+    "test:sw": "node apps/web/test/sw.test.mjs",
+    "test:workers": "for w in random media ai billing dm push; do node cloudflare/workers/run-e2e.mjs $w || exit 1; done",
+    "build": "npm run build -w apps/web && npm run build -w apps/admin"
+  }
+}
