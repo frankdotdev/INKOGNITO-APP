@@ -15,7 +15,16 @@ function deviceLabel(): string {
 export function ensureSession(): Promise<void> {
   ready ??= (async () => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) { const { error } = await supabase.auth.signInAnonymously({ options: { captchaToken: await captchaToken() } }); if (error) throw error; }
+    if (!data.session) {
+      // First try with captcha token if available
+      const token = await captchaToken().catch(() => undefined);
+      const res = await supabase.auth.signInAnonymously(token ? { options: { captchaToken: token } } : undefined);
+      if (res.error) {
+        // If 422 or captcha rejected, try standard anonymous sign-in
+        const fallback = await supabase.auth.signInAnonymously();
+        if (fallback.error) throw fallback.error;
+      }
+    }
     const { error } = await supabase.rpc('ensure_identity'); if (error) throw error;
     await supabase.rpc('register_device', { p_label: deviceLabel(), p_platform: 'web' });
   })().catch(e => { ready = null; throw e; });

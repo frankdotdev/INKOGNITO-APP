@@ -4,9 +4,9 @@ function csp(nonce: string) {
   return [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://vercel.live`,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' blob: data: https:",
-    "font-src 'self'",
     "media-src 'self' blob:",
     "connect-src 'self' https: wss: blob: stun: turn: turns:",
     "worker-src 'self'",
