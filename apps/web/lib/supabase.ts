@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { captchaToken } from './captcha';
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-if (!url || !key) throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (see .env.example).');
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key';
 export const supabase = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
 let ready: Promise<void> | null = null;
 export const resetSession = () => { ready = null; };
