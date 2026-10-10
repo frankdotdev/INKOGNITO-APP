@@ -5,6 +5,7 @@ compatibility_date = "2025-01-01"
 # Per environment. Secrets (never commit): wrangler secret put SUPABASE_SERVICE_KEY / DM_DATA_KEY
 #   DM_DATA_KEY = 32 random bytes, base64 (`openssl rand -base64 32`). Back it up: without it stored messages cannot be read.
 [vars]
-SUPABASE_URL = ""
-SUPABASE_ANON_KEY = ""
-ALLOWED_ORIGINS = "http://localhost:3000"
+SUPABASE_URL = "https://lfzencynkuyqtfexeofv.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmemVuY3lua3V5cXRmZXhlb2Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTk5NTEsImV4cCI6MjEwNzEzNTk1MX0.gOnQdguZLhU0_ZEhlDBT5cmMhaWAXWwZlZRyM3sOWe8"
+ALLOWED_ORIGINS = "https://inkognito-web.vercel.app,http://localhost:3000"
+

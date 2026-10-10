@@ -9,6 +9,6 @@ compatibility_date = "2025-01-01"
 crons = ["* * * * *"]
 
 [vars]
-SUPABASE_URL = ""
+SUPABASE_URL = "https://lfzencynkuyqtfexeofv.supabase.co"
 VAPID_PUBLIC_KEY = ""
-VAPID_SUBJECT = "mailto:you@example.com"
+VAPID_SUBJECT = "mailto:privacy@inkognito.app"

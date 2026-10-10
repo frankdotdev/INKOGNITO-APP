@@ -7,10 +7,10 @@ compatibility_date = "2025-01-01"
 #   USD plan at 3.00 (needs USD enabled on your Paystack account) and NGN plan at 4,500.00.
 # Paystack webhook URL to configure: https://<this-worker>/billing/webhook
 [vars]
-SUPABASE_URL = ""
-SUPABASE_ANON_KEY = ""
-ALLOWED_ORIGINS = "http://localhost:3000"
-SITE_URL = "http://localhost:3000"
+SUPABASE_URL = "https://lfzencynkuyqtfexeofv.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmemVuY3lua3V5cXRmZXhlb2Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTk5NTEsImV4cCI6MjEwNzEzNTk1MX0.gOnQdguZLhU0_ZEhlDBT5cmMhaWAXWwZlZRyM3sOWe8"
+ALLOWED_ORIGINS = "https://inkognito-web.vercel.app,http://localhost:3000"
+SITE_URL = "https://inkognito-web.vercel.app"
 # Paystack requires an email. People never give us one: each order gets <reference>@<this domain>, which receives nothing.
 PAYMENT_EMAIL_DOMAIN = "pay.example.com"
 PRICE_USD_CENTS = "300"

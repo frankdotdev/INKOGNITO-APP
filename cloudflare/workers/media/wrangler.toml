@@ -4,9 +4,9 @@ compatibility_date = "2025-01-01"
 
 # Per environment. Secret: `wrangler secret put SUPABASE_SERVICE_KEY` (service_role key).
 [vars]
-SUPABASE_URL = ""
-SUPABASE_ANON_KEY = ""
-ALLOWED_ORIGINS = "http://localhost:3000"
+SUPABASE_URL = "https://lfzencynkuyqtfexeofv.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmemVuY3lua3V5cXRmZXhlb2Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTk5NTEsImV4cCI6MjEwNzEzNTk1MX0.gOnQdguZLhU0_ZEhlDBT5cmMhaWAXWwZlZRyM3sOWe8"
+ALLOWED_ORIGINS = "https://inkognito-web.vercel.app,http://localhost:3000"
 # Image scanning. Set SCAN_PROVIDER = "openai" and `wrangler secret put OPENAI_API_KEY` to scan every upload (images are sent to OpenAI's moderation API).
 # Leave it empty to rely on the moderator review queue only. This does NOT replace Cloudflare's CSAM Scanning Tool, which matches known abuse images.
 SCAN_PROVIDER = ""
