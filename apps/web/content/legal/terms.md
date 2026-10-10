@@ -2,7 +2,7 @@
 
 Last updated: 9 October 2026
 
-These terms govern use of Inkognito, an anonymous social service. Have a lawyer review them for the places you operate before you treat them as binding, and replace the contact details at the end with your legal entity.
+These terms govern use of Inkognito, an anonymous social service. 
 
 By using Inkognito you agree to these terms and to the [Privacy Policy](/legal/privacy). If you do not agree, do not use the service.
 

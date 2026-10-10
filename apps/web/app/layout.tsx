@@ -12,7 +12,8 @@ export const viewport = {
   viewportFit: 'cover' as const,
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,
+  userScalable: false,
 };
 const css = Object.entries(themes).map(([id, t]) => `[data-theme="${id}"]{${Object.entries(themeToCssVars(t)).map(([k, v]) => `${k}:${v}`).join(';')}}`).join('\n');
 export default function Root({ children }: { children: React.ReactNode }) {
