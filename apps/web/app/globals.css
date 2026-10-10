@@ -42,7 +42,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .themes button{border:1px solid var(--border);border-radius:12px;min-height:44px;padding:0 12px;text-align:left;color:var(--text-secondary)}
 .themes button[aria-pressed=true]{border-color:var(--accent);color:var(--text-primary)}
 h3.h{font-size:13px;color:var(--text-muted);margin:0 0 8px;font-weight:600}
-.field{display:block;width:100%;background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;color:var(--text-primary);padding:12px;font:inherit;margin:8px 0}
+.field{display:block;width:100%;background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;color:var(--text-primary);padding:12px;font:inherit;font-size:16px;margin:8px 0}
 .primary{min-height:44px;padding:0 18px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;margin:8px 0}.primary:disabled{opacity:.5;cursor:default}
 .cmt{padding:12px 0;border-bottom:1px solid var(--border)}
 .poll{display:grid;gap:8px;margin:0 0 16px}

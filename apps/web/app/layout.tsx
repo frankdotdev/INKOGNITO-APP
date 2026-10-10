@@ -7,7 +7,13 @@ import { ServiceWorker } from '../components/ServiceWorker';
 import { InstallPrompt } from '../components/InstallPrompt';
 const font = Manrope({ subsets: ['latin'], variable: '--font' });
 export const metadata = { appleWebApp: { capable: true, title: 'Inkognito', statusBarStyle: 'black-translucent' as const }, icons: { apple: '/pwa-icon/180' }, metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'), title: 'Inkognito', description: "Say what you can't say anywhere else." };
-export const viewport = { themeColor: '#09090B', viewportFit: 'cover' as const };
+export const viewport = {
+  themeColor: '#09090B',
+  viewportFit: 'cover' as const,
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
 const css = Object.entries(themes).map(([id, t]) => `[data-theme="${id}"]{${Object.entries(themeToCssVars(t)).map(([k, v]) => `${k}:${v}`).join(';')}}`).join('\n');
 export default function Root({ children }: { children: React.ReactNode }) {
   return (

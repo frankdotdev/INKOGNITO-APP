@@ -14,7 +14,15 @@ export function CommentThread({ postId, enabled, shareable = false }: { postId: 
   const [body, setBody] = useState(''); const [fade, setFade] = useState(false); const [parent, setParent] = useState<Comment | null>(null);
   const [busy, setBusy] = useState(false); const [formErr, setFormErr] = useState(''); const [report, setReport] = useState<string | null>(null);
   const load = useCallback(() => commentService.list(postId).then(p => { setItems(p.items); setErr(false); }).catch(() => setErr(true)), [postId]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        commentService.list(postId).then(p => setItems(p.items)).catch(() => {});
+      }
+    }, 5_000);
+    return () => clearInterval(interval);
+  }, [load, postId]);
   const send = async () => { setBusy(true); setFormErr(''); try { await commentService.reply(postId, body, parent?.id, fade); setBody(''); setParent(null); await load(); } catch (e) { setFormErr(friendlyError(e)); } setBusy(false); };
   const blockC = async (id: string) => { if (!confirm('Block this person? You will stop seeing their posts, comments and Whispers.')) return; try { await blockService.block({ type: 'comment', id }); await load(); } catch { setFormErr("Couldn't block. Try again."); } };
   const roots = (items ?? []).filter(c => !c.parentId);
