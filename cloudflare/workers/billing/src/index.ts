@@ -132,17 +132,25 @@ export default {
       if (url.pathname === '/billing/checkout' && req.method === 'POST') {
         let b: { currency?: unknown; alias?: unknown }; try { b = await req.json(); } catch { return json({ error: 'bad_request' }, 400, h); }
         const cur = b.currency === 'NGN' ? 'NGN' : b.currency === 'USD' ? 'USD' : null; const price = cur && prices(env)[cur];
-        const alias = typeof b.alias === 'string' && b.alias.trim() ? b.alias.trim().slice(0, 40) : null;
-        if (!cur || !price || !price.plan || !(price.amount > 0)) return json({ error: 'bad_request' }, 400, h);
+        if (!cur || !price || !(price.amount > 0)) return json({ error: 'bad_request' }, 400, h);
         const r = await rpc<string>(env, 'billing_start_checkout', { p_identity: who, p_alias: alias, p_currency: cur, p_amount: price.amount });
         if (!r.ok) {
           const t = r.text; const code = t.includes('alias_taken') || t.includes('alias_pending') ? 'alias_taken' : t.includes('alias_reserved') ? 'alias_reserved' : t.includes('alias_invalid') ? 'alias_invalid' : t.includes('has_alias') ? 'has_alias' : t.includes('rate_limited') ? 'rate_limited' : 'failed';
           return json({ error: code }, code === 'alias_taken' || code === 'has_alias' ? 409 : code === 'rate_limited' ? 429 : code === 'failed' ? 502 : 400, h);
         }
         const reference = r.data as string;
-        const init = await ps(env, '/transaction/initialize', { method: 'POST', body: JSON.stringify({ email: `${reference}@${env.PAYMENT_EMAIL_DOMAIN}`, amount: price.amount, currency: cur, reference, plan: price.plan, callback_url: `${env.SITE_URL}/settings/plus/return`, metadata: { order: reference } }) });
-        const j = (await init.json().catch(() => ({}))) as { status?: boolean; data?: { authorization_url?: string } };
-        if (!init.ok || !j.status || !j.data?.authorization_url) return json({ error: 'payment_provider_unavailable' }, 502, h);
+        const payload: Record<string, unknown> = {
+          email: `${reference}@${env.PAYMENT_EMAIL_DOMAIN}`,
+          amount: price.amount,
+          currency: cur,
+          reference,
+          callback_url: `${env.SITE_URL}/settings/plus/return`,
+          metadata: { order: reference }
+        };
+        if (price.plan) payload.plan = price.plan;
+        const init = await ps(env, '/transaction/initialize', { method: 'POST', body: JSON.stringify(payload) });
+        const j = (await init.json().catch(() => ({}))) as { status?: boolean; data?: { authorization_url?: string }; message?: string };
+        if (!init.ok || !j.status || !j.data?.authorization_url) return json({ error: 'payment_provider_unavailable', details: j.message }, 502, h);
         return json({ url: j.data.authorization_url, reference }, 200, h);
       }
 

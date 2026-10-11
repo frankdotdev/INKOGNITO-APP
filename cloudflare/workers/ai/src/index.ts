@@ -55,9 +55,26 @@ async function chat(req: Request, env: Env, ctx: ExecutionContext, identity: str
     try {
       await send('meta', { sessionId: turn.session_id, remaining: turn.remaining, limit: turn.daily_limit, safety: crisis });
       let result: Result | null = null;
-      try { result = await streamGroq(env, msgs, t => send('token', { t })); }
-      catch { try { result = await geminiComplete(env, msgs); await send('token', { t: result.text }); } catch { result = null; } }
-      if (!result) { await rpc(env, 'ai_refund_turn', { p_identity: identity }).catch(() => {}); await send('error', { code: 'unavailable' }); return; }
+      let lastErr = '';
+      try {
+        result = await streamGroq(env, msgs, t => send('token', { t }));
+      } catch (ge: any) {
+        lastErr = `Groq: ${ge?.message || ge}`;
+        console.error('Groq failed:', ge?.message || ge);
+        try {
+          result = await geminiComplete(env, msgs);
+          await send('token', { t: result.text });
+        } catch (me: any) {
+          lastErr += ` | Gemini: ${me?.message || me}`;
+          console.error('Gemini failed:', me?.message || me);
+          result = null;
+        }
+      }
+      if (!result) {
+        await rpc(env, 'ai_refund_turn', { p_identity: identity }).catch(() => {});
+        await send('error', { code: 'unavailable', details: lastErr });
+        return;
+      }
       const title = history.length === 0 ? await encrypt(env, message.slice(0, 48)) : null;
       await rpc(env, 'ai_record_exchange', { p_identity: identity, p_session: turn.session_id, p_user_enc: await encrypt(env, message), p_assistant_enc: await encrypt(env, result.text), p_in: result.tokensIn, p_out: result.tokensOut, p_provider: result.provider, p_title_enc: title });
       await send('done', { remaining: turn.remaining });

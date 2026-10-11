@@ -14,7 +14,10 @@ export async function streamGroq(env: Env, msgs: Msg[], onToken: (t: string) => 
       method: 'POST', signal: ctl.signal, headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: env.AI_GROQ_MODEL, messages: msgs, stream: true, stream_options: { include_usage: true }, max_tokens: MAX_TOKENS, temperature: 0.7 }),
     });
-    if (!res.ok || !res.body) throw new ProviderError(`groq ${res.status}`, false);
+    if (!res.ok || !res.body) {
+      const txt = await res.text().catch(() => '');
+      throw new ProviderError(`groq ${res.status}: ${txt.slice(0, 120)}`, false);
+    }
     const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
     for (;;) {
       const { value, done } = await reader.read(); if (done) break;
@@ -49,7 +52,10 @@ export async function geminiComplete(env: Env, msgs: Msg[]): Promise<Result> {
       method: 'POST', signal: ctl.signal, headers: { 'x-goog-api-key': env.GEMINI_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { maxOutputTokens: MAX_TOKENS } }),
     });
-    if (!res.ok) throw new ProviderError(`gemini ${res.status}`, false);
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new ProviderError(`gemini ${res.status}: ${txt.slice(0, 120)}`, false);
+    }
     const j: any = await res.json();
     const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? '').join('').trim();
     if (!text) throw new ProviderError('gemini empty', false);
