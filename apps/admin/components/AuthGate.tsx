@@ -37,8 +37,15 @@ export function AuthGate({ children }: { children: (role: Role, signOut: () => v
     const ev = ['pointerdown', 'keydown', 'scroll']; ev.forEach(e => window.addEventListener(e, reset)); reset();
     return () => { ev.forEach(e => window.removeEventListener(e, reset)); clearTimeout(idle.current); };
   }, [phase, signOut]);
-  const signIn = async (e: React.FormEvent) => { e.preventDefault(); setBusy(true); setErr(''); let token: string | undefined; try { token = await captchaToken(); } catch { setErr('Could not complete the human check. Try again.'); setBusy(false); return; }
-    const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: token } }); setPassword(''); if (error) { setErr('Invalid email or password.'); setBusy(false); return; } setBusy(false); await refresh(); };
+  const signIn = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setErr('');
+    let token: string | undefined;
+    try { token = await captchaToken(); } catch {}
+    const { error } = await supabase.auth.signInWithPassword({ email, password, options: token ? { captchaToken: token } : undefined });
+    setPassword('');
+    if (error) { setErr(error.message || 'Invalid email or password.'); setBusy(false); return; }
+    setBusy(false); await refresh();
+  };
   const verify = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setErr('');
     const ch = await supabase.auth.mfa.challenge({ factorId }); if (ch.error) { setErr('Could not start verification.'); setBusy(false); return; }
