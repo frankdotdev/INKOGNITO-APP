@@ -28,10 +28,28 @@ async function withMedia(posts: Post[]): Promise<Post[]> {
     return posts.map(p => ({ ...p, media: rows.filter(r => r.post_id === p.id).map(r => ({ url: `${MEDIA}/m/${r.r2_key}`, width: r.width, height: r.height })) }));
   } catch { return posts; } // a media lookup failure should not hide the text
 }
+function forYouScore(p: Post): number {
+  const hoursOld = Math.max(0, (Date.now() - new Date(p.createdAt).getTime()) / 3_600_000);
+  const engagement = (p.counts.reactions * 1.2) + (p.counts.comments * 2.5) + (p.counts.echoes * 3.5);
+  const engagementFactor = Math.log1p(engagement) * 1.4;
+  const recencyFactor = 7.5 / Math.pow(hoursOld + 2.0, 0.7);
+  const mediaBonus = (p.media?.length ? 0.7 : 0) + (p.poll ? 0.5 : 0);
+  const randomJitter = Math.random() * 2.8;
+  return engagementFactor + recencyFactor + mediaBonus + randomJitter;
+}
+
+function rankForYou(posts: Post[]): Post[] {
+  return [...posts].sort((a, b) => forYouScore(b) - forYouScore(a));
+}
+
 async function feed(kind: FeedKind, cursor: string | undefined, query?: string, category?: string): Promise<Page<Post>> {
   const offset = cursor ? parseInt(cursor, 10) : 0;
   const rows = await rpc<Row[]>('get_feed', { p_kind: kind, p_query: query ?? null, p_category: category ?? null, p_limit: PAGE, p_offset: offset });
-  return { items: await withMedia(rows.map(toPost)), cursor: rows.length === PAGE ? String(offset + PAGE) : undefined };
+  let items = await withMedia(rows.map(toPost));
+  if (kind === 'forYou') {
+    items = rankForYou(items);
+  }
+  return { items, cursor: rows.length === PAGE ? String(offset + PAGE) : undefined };
 }
 export const postService: PostService = {
   async setSharing(id, on) { await rpc('set_post_sharing', { p_id: id, p_on: on }); },

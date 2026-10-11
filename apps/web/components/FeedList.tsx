@@ -19,15 +19,13 @@ export function FeedList({ load, emptyTitle, emptyHint }: { load: (cursor?: stri
         if (!live) return;
         setPosts(prev => {
           if (!prev) return p.items;
-          // Merge newly loaded items to preserve scroll position while updating reaction/comment counts
-          const prevMap = new Map(prev.map(i => [i.id, i]));
-          const freshIds = new Set(p.items.map(i => i.id));
-          const updated = p.items.map(fresh => {
-            const existing = prevMap.get(fresh.id);
-            return existing ? { ...fresh, mine: existing.mine, reacted: existing.reacted, echoed: existing.echoed, saved: existing.saved } : fresh;
+          const freshMap = new Map(p.items.map(i => [i.id, i]));
+          return prev.map(existing => {
+            const fresh = freshMap.get(existing.id);
+            return fresh
+              ? { ...existing, counts: fresh.counts, poll: fresh.poll, reacted: existing.reacted, echoed: existing.echoed, saved: existing.saved }
+              : existing;
           });
-          const older = prev.filter(i => !freshIds.has(i.id));
-          return [...updated, ...older];
         });
       }).catch(() => {});
     }, 8_000);
