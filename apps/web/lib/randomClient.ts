@@ -8,7 +8,7 @@ const MAX_RECONNECTS = 4;
 export class RandomChat {
   private ws: WebSocket | null = null; private token: string | null = null; private destroyed = false; private attempts = 0; private state: RandomState = 'idle'; private timer?: ReturnType<typeof setTimeout>;
   constructor(private base: string, private ev: RandomEvents, private mode: 'text' | 'audio' | 'video' = 'text') {}
-  private pc: RTCPeerConnection | null = null; private local: MediaStream | null = null; private pendingIce: RTCIceCandidateInit[] = []; private queued: any[] = [];
+  private pc: RTCPeerConnection | null = null; private local: MediaStream | null = null; private remoteStream: MediaStream | null = null; private pendingIce: RTCIceCandidateInit[] = []; private queued: any[] = [];
   private set(s: RandomState) { this.state = s; this.ev.onState(s); }
   private parse(d: unknown) { try { return JSON.parse(String(d)) as { type: string; [k: string]: any }; } catch { return null; } }
   private closeSocket() { const w = this.ws; this.ws = null; if (w) { w.onclose = null; w.onmessage = null; w.onerror = null; try { w.close(); } catch {} } }
@@ -64,11 +64,19 @@ export class RandomChat {
     try { this.local = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: this.mode === 'video' ? { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } : false }); }
     catch { this.send({ type: 'leave' }); this.closeSocket(); this.set('permission_denied'); return; } // the other person is told we left
     this.ev.onLocalStream?.(this.local);
-    let iceServers: RTCIceServer[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }];
+    this.remoteStream = new MediaStream();
+    let iceServers: RTCIceServer[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] }];
     try { const { data } = await supabase.auth.getSession(); const r = await fetch(`${this.httpBase()}/rtc/ice?mode=${this.mode}`, { headers: { Authorization: `Bearer ${data.session?.access_token}` } }); if (r.ok) { const j = await r.json(); if (j.iceServers?.length) iceServers = j.iceServers; } } catch {}
     const pc = new RTCPeerConnection({ iceServers }); this.pc = pc;
     this.local.getTracks().forEach(t => pc.addTrack(t, this.local!));
-    pc.ontrack = e => { const stream = e.streams[0] ?? new MediaStream([e.track]); this.ev.onRemoteStream?.(stream); };
+    pc.ontrack = e => {
+      if (e.streams && e.streams[0]) {
+        this.ev.onRemoteStream?.(e.streams[0]);
+      } else if (this.remoteStream) {
+        this.remoteStream.addTrack(e.track);
+        this.ev.onRemoteStream?.(this.remoteStream);
+      }
+    };
     pc.onicecandidate = e => { if (e.candidate) this.send({ type: 'signal', data: { candidate: e.candidate.toJSON() } }); };
     pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') this.ev.onNotice("The call couldn't connect. Try Next."); };
     for (const d of this.queued.splice(0)) await this.process(d);
@@ -86,7 +94,9 @@ export class RandomChat {
     } catch {}
   }
   private stopMedia() {
-    this.local?.getTracks().forEach(t => t.stop()); this.local = null; try { this.pc?.close(); } catch {} this.pc = null; this.pendingIce = []; this.queued = [];
+    this.local?.getTracks().forEach(t => t.stop()); this.local = null;
+    this.remoteStream?.getTracks().forEach(t => t.stop()); this.remoteStream = null;
+    try { this.pc?.close(); } catch {} this.pc = null; this.pendingIce = []; this.queued = [];
     this.ev.onLocalStream?.(null); this.ev.onRemoteStream?.(null);
   }
   setMic(on: boolean) { this.local?.getAudioTracks().forEach(t => (t.enabled = on)); }

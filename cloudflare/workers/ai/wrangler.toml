@@ -12,6 +12,6 @@ SUPABASE_URL = "https://lfzencynkuyqtfexeofv.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmemVuY3lua3V5cXRmZXhlb2Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTk5NTEsImV4cCI6MjEwNzEzNTk1MX0.gOnQdguZLhU0_ZEhlDBT5cmMhaWAXWwZlZRyM3sOWe8"
 ALLOWED_ORIGINS = "https://inkognito-web.vercel.app,http://localhost:3000"
 # Model ids change often. Check console.groq.com/docs/models and ai.google.dev/gemini-api/docs/models before deploying.
-AI_GROQ_MODEL = "llama-3.3-70b-versatile"
-AI_GEMINI_MODEL = "gemini-2.0-flash"
+AI_GROQ_MODEL = "llama-3.1-8b-instant"
+AI_GEMINI_MODEL = "gemini-1.5-flash"
 

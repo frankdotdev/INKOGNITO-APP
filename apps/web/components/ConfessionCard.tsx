@@ -6,14 +6,15 @@ import type { Post } from '@inkognito/core';
 import { IdentityBadge, MoodBadge } from './ui';
 import { PollCard } from './PollCard';
 import { ReportSheet } from './ReportSheet';
+import { ShareCardModal } from './ShareCardModal';
 import { reactionService } from '../lib/services';
 import { postService } from '../lib/postService';
 import { blockService } from '../lib/settingsServices';
-import { ShareButton } from './ShareButton';
 import { timeAgo, timeLeft } from '../lib/time';
 export function ConfessionCard({ post, detail = false, onRemoved }: { post: Post; detail?: boolean; onRemoved?: () => void }) {
   const [s, setS] = useState({ reacted: post.reacted, reactions: post.counts.reactions, echoed: post.echoed, echoes: post.counts.echoes, saved: post.saved });
   const [sharing, setSharing] = useState(post.shareable);
+  const [cardModal, setCardModal] = useState(false);
   const [menu, setMenu] = useState(false); const [report, setReport] = useState(false); const [err, setErr] = useState('');
   const act = async (next: typeof s, call: () => Promise<unknown>) => { const prev = s; setS(next); setErr(''); try { await call(); } catch { setS(prev); setErr("That didn't go through. Try again."); } };
   const remove = async () => { if (!confirm("Let this disappear? This can't be undone.")) return; try { await postService.remove(post.id); onRemoved?.(); } catch { setErr("Couldn't remove it. Try again."); } setMenu(false); };
@@ -38,11 +39,12 @@ export function ConfessionCard({ post, detail = false, onRemoved }: { post: Post
         {detail ? <span className="act"><MessageCircle size={20} />{post.counts.comments}</span> : <Link className="act" href={`/post/${post.id}`} aria-label="Comments"><MessageCircle size={20} />{post.counts.comments}</Link>}
         <button className="act" aria-pressed={s.echoed} aria-label="Echo" onClick={() => act({ ...s, echoed: !s.echoed, echoes: s.echoes + (s.echoed ? -1 : 1) }, () => reactionService.echo(post.id, !s.echoed))}><Repeat2 size={20} />{s.echoes}</button>
         <span className="grow" />
-        {sharing && <ShareButton path={`/s/${post.id}`} title="Share this confession" text={post.body.slice(0, 120)} />}
+        {sharing && <button className="act" aria-label="Share as Visual Card" onClick={() => setCardModal(true)}><Share2 size={20} /></button>}
         <button className="act" aria-pressed={s.saved} aria-label="Save" onClick={() => act({ ...s, saved: !s.saved }, () => reactionService.bookmark(post.id, !s.saved))}><Bookmark size={20} /></button>
       </div>
       {err && <p role="alert" className="meta" style={{ color: 'var(--danger)' }}>{err}</p>}
       {report && <ReportSheet target={{ type: 'post', id: post.id }} onClose={() => setReport(false)} />}
+      {cardModal && <ShareCardModal post={post} onClose={() => setCardModal(false)} />}
     </article>
   );
 }

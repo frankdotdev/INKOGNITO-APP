@@ -16,11 +16,14 @@ export default function Call({ searchParams }: { searchParams: Promise<{ mode?: 
       onMessage: () => {}, onTyping: () => {}, onNotice: t => { setNotice(t); setTimeout(() => setNotice(''), 4000); },
       onLocalStream: s => { if (local.current) local.current.srcObject = s; },
       onRemoteStream: s => {
-        if (remote.current) {
+        if (remote.current && s) {
           remote.current.srcObject = s;
-          if (s) { remote.current.play().catch(() => {}); }
+          remote.current.onloadedmetadata = () => {
+            remote.current?.play().catch(() => {});
+          };
+          remote.current.play().catch(() => {});
         }
-        setHasRemote(!!s);
+        setHasRemote(!!s && (mode === 'audio' || (s?.getVideoTracks()?.length ?? 0) > 0));
       },
     }, mode);
     chat.current = c; c.join(); return () => c.destroy();
