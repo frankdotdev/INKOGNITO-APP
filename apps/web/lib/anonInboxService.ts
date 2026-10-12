@@ -46,12 +46,12 @@ function toMessage(r: any): AnonMessage {
 
 export const anonInboxService = {
   async create(title: string, prompt: string, visibility: AnonVisibility): Promise<{ id: string; slug: string }> {
-    const rows = await rpc<{ id: string; slug: string }[]>('create_anon_inbox', {
+    const res = await rpc<any>('create_anon_inbox', {
       p_title: title,
       p_prompt: prompt || null,
       p_visibility: visibility,
     });
-    return rows[0];
+    return Array.isArray(res) ? res[0] : res;
   },
 
   async updateVisibility(id: string, visibility: AnonVisibility): Promise<void> {

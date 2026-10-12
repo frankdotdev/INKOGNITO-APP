@@ -260,11 +260,11 @@ declare
 begin
   loop
     sl := private.random_slug();
-    exit when not exists (select 1 from private.anon_inboxes where slug = sl);
+    exit when not exists (select 1 from private.anon_inboxes where private.anon_inboxes.slug = sl);
   end loop;
   insert into private.anon_inboxes (owner_id, title, prompt, visibility, slug)
     values (v, p_title, p_prompt, p_visibility, sl)
-    returning private.anon_inboxes.id into iid;
+    returning id into iid;
   return query select iid, sl;
 end $$;
 
