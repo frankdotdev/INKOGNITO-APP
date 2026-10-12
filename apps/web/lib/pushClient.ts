@@ -1,5 +1,5 @@
 import { rpc } from './postService';
-const KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BHu9M9JovYbe_ZAXaV_G3lyAJNVEmvAMlli0pemXnlRq8zZ52T0TuXRHN0M-RrPm9EMnpGgRowOVSnBMEcprBJs';
 export const pushConfigured = !!KEY;
 export type PushState = 'unconfigured' | 'unsupported' | 'denied' | 'off' | 'on';
 export type NotificationPrefs = { replies: boolean; whispers: boolean; messages: boolean; activity: boolean };

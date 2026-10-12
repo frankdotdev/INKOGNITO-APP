@@ -127,8 +127,6 @@ begin
              or (p_scope = 'mine'   and p.identity_id = v)
              or (p_scope = 'saved'  and exists (select 1 from private.bookmarks b where b.identity_id = v and b.post_id = p.id))
              or (p_scope = 'echoes' and exists (select 1 from private.echoes ec where ec.original_post_id = p.id and ec.identity_id = v)))
-        -- skip already-seen posts for forYou
-        and (p_kind <> 'forYou' or p_seen_ids is null or p.id <> all(p_seen_ids))
         and not exists (select 1 from private.blocks bl where bl.blocker_identity_id = v and bl.blocked_identity_id = p.identity_id)
         and (p_query is null or p.body ilike '%' || replace(replace(p_query,'%','\%'),'_','\_') || '%' or lower(p.category) = lower(p_query))
         and (p_kind <> 'questions' or p.body like '%?%')
@@ -161,11 +159,13 @@ begin
             -- ── Content richness bonus ────────────────────────────────────
             + (case when b.poll_post_id is not null then 0.6 else 0.0 end)
 
+            -- ── Seen-post freshness bonus / repeat penalty (never hides posts completely) ──
+            + (case when p_seen_ids is not null and b.id = any(p_seen_ids) then -3.5 else 1.2 end)
+
             -- ── Own-post suppression ──────────────────────────────────────
             - (case when b.identity_id = v then 2.5 else 0.0 end)
 
             -- ── Stochastic exploration: random 0..1.8 ensures some serendipity ──
-            -- Smaller than before (was 2.8) since we now have real signal
             + (random() * 1.8)
           )
           when 'trending' then

@@ -10,5 +10,5 @@ crons = ["* * * * *"]
 
 [vars]
 SUPABASE_URL = "https://lfzencynkuyqtfexeofv.supabase.co"
-VAPID_PUBLIC_KEY = ""
+VAPID_PUBLIC_KEY = "BHu9M9JovYbe_ZAXaV_G3lyAJNVEmvAMlli0pemXnlRq8zZ52T0TuXRHN0M-RrPm9EMnpGgRowOVSnBMEcprBJs"
 VAPID_SUBJECT = "mailto:privacy@inkognito.app"

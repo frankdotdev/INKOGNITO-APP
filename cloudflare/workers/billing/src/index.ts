@@ -133,10 +133,11 @@ export default {
         let b: { currency?: unknown; alias?: unknown }; try { b = await req.json(); } catch { return json({ error: 'bad_request' }, 400, h); }
         const cur = b.currency === 'NGN' ? 'NGN' : b.currency === 'USD' ? 'USD' : null; const price = cur && prices(env)[cur];
         if (!cur || !price || !(price.amount > 0)) return json({ error: 'bad_request' }, 400, h);
+        const alias = typeof b.alias === 'string' && b.alias.trim() ? b.alias.trim() : null;
         const r = await rpc<string>(env, 'billing_start_checkout', { p_identity: who, p_alias: alias, p_currency: cur, p_amount: price.amount });
         if (!r.ok) {
           const t = r.text; const code = t.includes('alias_taken') || t.includes('alias_pending') ? 'alias_taken' : t.includes('alias_reserved') ? 'alias_reserved' : t.includes('alias_invalid') ? 'alias_invalid' : t.includes('has_alias') ? 'has_alias' : t.includes('rate_limited') ? 'rate_limited' : 'failed';
-          return json({ error: code }, code === 'alias_taken' || code === 'has_alias' ? 409 : code === 'rate_limited' ? 429 : code === 'failed' ? 502 : 400, h);
+          return json({ error: code, details: t }, code === 'alias_taken' || code === 'has_alias' ? 409 : code === 'rate_limited' ? 429 : code === 'failed' ? 502 : 400, h);
         }
         const reference = r.data as string;
         const payload: Record<string, unknown> = {
@@ -166,7 +167,10 @@ export default {
         const had = await must<string>(rpc(env, 'billing_get_subscription_code', { p_identity: who })); if (!had) return json({ error: 'no_subscription' }, 404, h);
         return (await stopRenewals(env, who)) ? json({ ok: true }, 200, h) : json({ error: 'payment_provider_unavailable' }, 502, h);
       }
-    } catch { return json({ error: 'unavailable' }, 503, h); }
+    } catch (e: any) {
+      console.error('billing handler exception:', e);
+      return json({ error: 'unavailable', details: e?.message ?? String(e) }, 503, h);
+    }
     return json({ error: 'not_found' }, 404, h);
   },
 };

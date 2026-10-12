@@ -164,19 +164,40 @@ function rankForYou(posts: Post[]): Post[] {
 
 async function feed(kind: FeedKind, cursor: string | undefined, query?: string, category?: string): Promise<Page<Post>> {
   const offset = cursor ? parseInt(cursor, 10) : 0;
-
-  // For forYou: pass seen IDs to the server so it skips them in its candidate pool.
-  // We send up to 200 most-recent seen IDs to avoid URL bloat.
   const seenIds = kind === 'forYou' ? getSeenIds().slice(-200) : null;
 
-  const rows = await rpc<Row[]>('get_feed', {
+  let rows = await rpc<Row[]>('get_feed', {
     p_kind: kind,
     p_query: query ?? null,
     p_category: category ?? null,
     p_limit: PAGE,
     p_offset: offset,
     p_seen_ids: seenIds && seenIds.length > 0 ? seenIds : null,
-  });
+  }).catch(() => [] as Row[]);
+
+  // Fallback: If 0 rows returned, fetch without seen filter so user never sees an empty screen
+  if (kind === 'forYou' && rows.length === 0) {
+    rows = await rpc<Row[]>('get_feed', {
+      p_kind: kind,
+      p_query: query ?? null,
+      p_category: category ?? null,
+      p_limit: PAGE,
+      p_offset: offset,
+      p_seen_ids: null,
+    }).catch(() => [] as Row[]);
+  }
+
+  // Second Fallback: If still 0 (e.g. cold start with no forYou scores), fetch fresh chronological
+  if (kind === 'forYou' && rows.length === 0) {
+    rows = await rpc<Row[]>('get_feed', {
+      p_kind: 'fresh',
+      p_query: query ?? null,
+      p_category: category ?? null,
+      p_limit: PAGE,
+      p_offset: offset,
+      p_seen_ids: null,
+    }).catch(() => [] as Row[]);
+  }
 
   let items = await withMedia(rows.map(toPost));
 
@@ -184,7 +205,7 @@ async function feed(kind: FeedKind, cursor: string | undefined, query?: string, 
     items = rankForYou(items);
   }
 
-  // Mark all fetched IDs as seen
+  // Mark currently loaded IDs as seen
   markSeen(items.map(p => p.id));
 
   return { items, cursor: rows.length === PAGE ? String(offset + PAGE) : undefined };
