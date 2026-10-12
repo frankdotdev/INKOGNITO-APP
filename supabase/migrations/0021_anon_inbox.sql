@@ -398,12 +398,15 @@ language sql stable security definer set search_path = '' as $$
     limit p_limit offset p_offset;
 $$;
 
-grant execute on function public.create_anon_inbox to authenticated;
-grant execute on function public.update_anon_inbox to authenticated;
-grant execute on function public.close_anon_inbox to authenticated;
-grant execute on function public.get_anon_inbox to authenticated, anon;
-grant execute on function public.send_anon_message to authenticated, anon;
-grant execute on function public.get_anon_messages to authenticated, anon;
-grant execute on function public.remove_anon_message to authenticated;
-grant execute on function public.my_anon_inboxes to authenticated;
-grant execute on function public.get_public_inboxes to authenticated, anon;
+grant execute on function public.create_anon_inbox to anon, authenticated;
+grant execute on function public.update_anon_inbox to anon, authenticated;
+grant execute on function public.close_anon_inbox to anon, authenticated;
+grant execute on function public.get_anon_inbox to anon, authenticated;
+grant execute on function public.send_anon_message to anon, authenticated;
+grant execute on function public.get_anon_messages to anon, authenticated;
+grant execute on function public.remove_anon_message to anon, authenticated;
+grant execute on function public.my_anon_inboxes to anon, authenticated;
+grant execute on function public.get_public_inboxes to anon, authenticated;
+
+-- Immediately reload PostgREST schema cache
+notify pgrst, 'reload schema';
