@@ -10,7 +10,13 @@ export async function streamGroq(env: Env, msgs: Msg[], onToken: (t: string) => 
   const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   let started = false, text = '', usage: { prompt_tokens?: number; completion_tokens?: number } | undefined;
   try {
-    const candidateModels = Array.from(new Set([env.AI_GROQ_MODEL, 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-8b-8192'].filter(Boolean)));
+    const candidateModels = Array.from(new Set([
+      env.AI_GROQ_MODEL,
+      'openai/gpt-oss-20b',
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'allam-2-7b'
+    ].filter(Boolean)));
     let res: Response | null = null;
     let lastErrTxt = '';
     for (const m of candidateModels) {
@@ -69,10 +75,11 @@ export async function geminiComplete(env: Env, msgs: Msg[]): Promise<Result> {
 
   try {
     let res = await tryCall('v1beta', cleanModel);
+    if (!res.ok) res = await tryCall('v1beta', 'gemini-2.5-flash');
+    if (!res.ok) res = await tryCall('v1beta', 'gemini-2.5-flash-lite');
+    if (!res.ok) res = await tryCall('v1beta', 'gemini-flash-latest');
     if (!res.ok) res = await tryCall('v1', cleanModel);
-    if (!res.ok) res = await tryCall('v1beta', 'gemini-1.5-flash');
-    if (!res.ok) res = await tryCall('v1', 'gemini-1.5-flash');
-    if (!res.ok) res = await tryCall('v1beta', 'gemini-2.0-flash');
+    if (!res.ok) res = await tryCall('v1', 'gemini-2.5-flash');
 
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
