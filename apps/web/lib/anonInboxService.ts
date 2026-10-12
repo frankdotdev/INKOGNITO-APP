@@ -1,4 +1,4 @@
-import { supabase, rpc } from './supabase';
+import { rpc } from './postService';
 
 export type AnonVisibility = 'private' | 'link' | 'public';
 

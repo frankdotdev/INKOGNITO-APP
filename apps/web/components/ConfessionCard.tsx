@@ -8,7 +8,7 @@ import { PollCard } from './PollCard';
 import { ReportSheet } from './ReportSheet';
 import { ShareCardModal } from './ShareCardModal';
 import { reactionService } from '../lib/services';
-import { postService } from '../lib/postService';
+import { postService, recordInterest } from '../lib/postService';
 import { blockService } from '../lib/settingsServices';
 import { timeAgo, timeLeft } from '../lib/time';
 export function ConfessionCard({ post, detail = false, onRemoved }: { post: Post; detail?: boolean; onRemoved?: () => void }) {

@@ -1,4 +1,4 @@
--- Migration 0021: Anonymous Inbox (Anon Link) feature
+-- Migration 0021: Anonymous Inbox (Anon Link) feature (IDEMPOTENT)
 -- Allows users to create a named "inbox" and share a link so others can leave anonymous confessions.
 -- Three visibility modes:
 --   'private'  → only the inbox owner can read replies (classic anonymous Q&A)
@@ -7,7 +7,7 @@
 
 -- ─── tables ──────────────────────────────────────────────────────────────────
 
-create table private.anon_inboxes (
+create table if not exists private.anon_inboxes (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null references private.identities(id) on delete cascade,
   title         text not null check (char_length(title) between 1 and 200),
@@ -19,7 +19,7 @@ create table private.anon_inboxes (
   closed_at     timestamptz                        -- when set, no new messages accepted
 );
 
-create table private.anon_messages (
+create table if not exists private.anon_messages (
   id            uuid primary key default gen_random_uuid(),
   inbox_id      uuid not null references private.anon_inboxes(id) on delete cascade,
   sender_id     uuid references private.identities(id) on delete set null,  -- null = unauthenticated sender
@@ -29,8 +29,8 @@ create table private.anon_messages (
   status        text not null default 'active' check (status in ('active','removed'))
 );
 
-create index on private.anon_inboxes(owner_id);
-create index on private.anon_messages(inbox_id, status, created_at desc);
+create index if not exists anon_inboxes_owner_idx on private.anon_inboxes(owner_id);
+create index if not exists anon_messages_inbox_idx on private.anon_messages(inbox_id, status, created_at desc);
 
 -- RLS
 alter table private.anon_inboxes enable row level security;
@@ -40,7 +40,7 @@ alter table private.anon_messages force row level security;
 
 -- ─── slug generator ───────────────────────────────────────────────────────────
 
-create function private.random_slug() returns text language sql as $$
+create or replace function private.random_slug() returns text language sql as $$
   select substr(replace(encode(gen_random_bytes(9), 'base64'), '/', ''), 1, 10);
 $$;
 
@@ -48,14 +48,14 @@ $$;
 -- These also replace the old 16-word adj/noun in ensure_context
 -- We store them in a single table for easy updates without re-migrations
 
-create table private.name_parts (
+create table if not exists private.name_parts (
   id      smallserial primary key,
   kind    text not null check (kind in ('adj','noun')),
   word    text not null unique
 );
 
 insert into private.name_parts (kind, word) values
--- ADJECTIVES (~200)
+-- ADJECTIVES
 -- Moods/atmosphere
 ('adj','Quiet'),('adj','Hollow'),('adj','Distant'),('adj','Lost'),('adj','Faded'),('adj','Restless'),
 ('adj','Burning'),('adj','Frozen'),('adj','Drifting'),('adj','Haunted'),('adj','Trembling'),('adj','Numb'),
@@ -75,17 +75,17 @@ insert into private.name_parts (kind, word) values
 -- Myth/power
 ('adj','Fallen'),('adj','Rising'),('adj','Exiled'),('adj','Chosen'),('adj','Forgotten'),('adj','Reborn'),
 ('adj','Unseen'),('adj','Unheard'),('adj','Unnamed'),('adj','Unbound'),('adj','Relentless'),
-('adj','Sovereign'),('adj','Errant'),('adj','Wandering'),('adj','Defiant'),('adj','Luminous'),
-('adj','Radiant'),('adj','Shadowed'),('adj','Veiled'),('adj','Cloaked'),('adj','Masked'),
+('adj','Sovereign'),('adj','Errant'),('adj','Defiant'),('adj','Luminous'),
+('adj','Radiant'),('adj','Shadowed'),('adj','Cloaked'),('adj','Masked'),
 -- Poetic
 ('adj','Paper'),('adj','Glass'),('adj','Iron'),('adj','Marble'),('adj','Stone'),('adj','Bone'),
 ('adj','Silk'),('adj','Ash'),('adj','Ember'),('adj','Smoke'),('adj','Sand'),('adj','Salt'),
-('adj','Hollow'),('adj','Ruined'),('adj','Mended'),('adj','Severed'),('adj','Woven'),('adj','Torn'),
+('adj','Ruined'),('adj','Severed'),('adj','Torn'),
 ('adj','Bitter'),('adj','Sweet'),('adj','Heavy'),('adj','Light'),('adj','Soft'),('adj','Sharp'),
 ('adj','True'),('adj','False'),('adj','Real'),('adj','Dream'),('adj','Midnight'),('adj','Dawn'),
 ('adj','Twilight'),('adj','Sunken'),('adj','Soaring'),('adj','Sinking'),('adj','Floating'),
 
--- NOUNS (~250) — mythology, ancient names, creatures, places, real old names, concepts
+-- NOUNS — mythology, ancient names, creatures, places, real old names, concepts
 -- Greek mythology
 ('noun','Orion'),('noun','Lyra'),('noun','Cassidy'),('noun','Selene'),('noun','Helios'),('noun','Eos'),
 ('noun','Nyx'),('noun','Erebus'),('noun','Hypnos'),('noun','Morpheus'),('noun','Thanatos'),
@@ -131,7 +131,7 @@ insert into private.name_parts (kind, word) values
 ('noun','Lament'),('noun','Hymn'),('noun','Anthem'),('noun','Psalm'),('noun','Verse'),
 -- Places/natural wonders
 ('noun','Abyss'),('noun','Horizon'),('noun','Meridian'),('noun','Solitude'),('noun','Arcadia'),
-('noun','Elysium'),('noun','Avalon'),('noun','Valhalla'),('noun','Olympus'),('noun','Erebus'),
+('noun','Avalon'),('noun','Valhalla'),('noun','Olympus'),
 ('noun','Zion'),('noun','Eden'),('noun','Asgard'),('noun','Midgard'),('noun','Niflheim'),
 -- Animals/creatures
 ('noun','Raven'),('noun','Wolf'),('noun','Crane'),('noun','Falcon'),('noun','Serpent'),
@@ -140,11 +140,12 @@ insert into private.name_parts (kind, word) values
 ('noun','Manticore'),('noun','Wyvern'),('noun','Cockatrice'),('noun','Chimera'),
 -- Random cool mix
 ('noun','Lore'),('noun','Tide'),('noun','Storm'),('noun','Rain'),('noun','River'),('noun','Harbor'),
-('noun','Lantern'),('noun','Compass'),('noun','Anchor'),('noun','Vessel'),('noun','Compass'),
+('noun','Lantern'),('noun','Compass'),('noun','Anchor'),('noun','Vessel'),
 ('noun','Pilgrim'),('noun','Wanderer'),('noun','Seeker'),('noun','Keeper'),('noun','Warden'),
 ('noun','Herald'),('noun','Envoy'),('noun','Oracle'),('noun','Seer'),('noun','Prophet'),
 ('noun','Scribe'),('noun','Sage'),('noun','Mystic'),('noun','Nomad'),('noun','Rogue'),
-('noun','Paladin'),('noun','Sentinel'),('noun','Vanguard'),('noun','Arbiter'),('noun','Curator');
+('noun','Paladin'),('noun','Sentinel'),('noun','Vanguard'),('noun','Arbiter'),('noun','Curator')
+on conflict (word) do nothing;
 
 -- ─── updated ensure_context using name_parts table ────────────────────────────
 
@@ -211,7 +212,7 @@ end $$;
 
 -- ─── anon inbox helper: assign a per-sender name in this inbox ────────────────
 
-create function private.anon_inbox_name(p_inbox uuid, p_identity uuid) returns text
+create or replace function private.anon_inbox_name(p_inbox uuid, p_identity uuid) returns text
 language plpgsql security definer set search_path = '' as $$
 declare
   h         bytea;
@@ -246,7 +247,7 @@ end $$;
 -- ─── public API ───────────────────────────────────────────────────────────────
 
 -- Create an inbox
-create function public.create_anon_inbox(
+create or replace function public.create_anon_inbox(
   p_title      text,
   p_prompt     text default null,
   p_visibility text default 'private'
@@ -268,7 +269,7 @@ begin
 end $$;
 
 -- Update visibility of your own inbox
-create function public.update_anon_inbox(p_id uuid, p_visibility text)
+create or replace function public.update_anon_inbox(p_id uuid, p_visibility text)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v uuid := private.require_identity(false);
 begin
@@ -278,7 +279,7 @@ begin
 end $$;
 
 -- Close (stop accepting messages) your own inbox
-create function public.close_anon_inbox(p_id uuid)
+create or replace function public.close_anon_inbox(p_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v uuid := private.require_identity(false);
 begin
@@ -287,7 +288,7 @@ begin
 end $$;
 
 -- Get inbox metadata for share page (public, by slug — respects visibility)
-create function public.get_anon_inbox(p_slug text)
+create or replace function public.get_anon_inbox(p_slug text)
 returns table (id uuid, title text, prompt text, visibility text, created_at timestamptz, closed boolean)
 language sql stable security definer set search_path = '' as $$
   select id, title, prompt, visibility, created_at, closed_at is not null
@@ -296,7 +297,7 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Send an anonymous message to an inbox
-create function public.send_anon_message(p_slug text, p_body text)
+create or replace function public.send_anon_message(p_slug text, p_body text)
 returns void language plpgsql security definer set search_path = '' as $$
 declare
   v    uuid;
@@ -322,10 +323,7 @@ begin
 end $$;
 
 -- Get messages for an inbox
---   Owner: always sees all messages
---   Authenticated users with link: sees if visibility = 'link' or 'public'
---   Everyone: sees if visibility = 'public'
-create function public.get_anon_messages(p_slug text, p_limit int default 50, p_offset int default 0)
+create or replace function public.get_anon_messages(p_slug text, p_limit int default 50, p_offset int default 0)
 returns table (id uuid, public_name text, body text, created_at timestamptz, is_mine boolean)
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -344,7 +342,6 @@ begin
   -- Access check
   if oid is distinct from v then
     if vis = 'private' then raise exception 'forbidden' using errcode = '42501'; end if;
-    -- 'link' and 'public' are both readable by anyone who calls this function
   end if;
 
   return query
@@ -357,7 +354,7 @@ begin
 end $$;
 
 -- Owner removes a single message
-create function public.remove_anon_message(p_id uuid)
+create or replace function public.remove_anon_message(p_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v uuid := private.require_identity(false);
 begin
@@ -368,7 +365,7 @@ begin
 end $$;
 
 -- List owner's inboxes (my inboxes page)
-create function public.my_anon_inboxes(p_limit int default 20, p_offset int default 0)
+create or replace function public.my_anon_inboxes(p_limit int default 20, p_offset int default 0)
 returns table (
   id uuid, title text, prompt text, visibility text,
   slug text, created_at timestamptz, closed boolean, message_count bigint
@@ -389,7 +386,7 @@ begin
 end $$;
 
 -- Public discover: list public inboxes
-create function public.get_public_inboxes(p_limit int default 30, p_offset int default 0)
+create or replace function public.get_public_inboxes(p_limit int default 30, p_offset int default 0)
 returns table (id uuid, title text, prompt text, slug text, created_at timestamptz, message_count bigint)
 language sql stable security definer set search_path = '' as $$
   select i.id, i.title, i.prompt, i.slug, i.created_at, count(m.id)
