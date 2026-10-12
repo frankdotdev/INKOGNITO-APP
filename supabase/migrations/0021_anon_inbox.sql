@@ -41,7 +41,7 @@ alter table private.anon_messages force row level security;
 -- ─── slug generator ───────────────────────────────────────────────────────────
 
 create or replace function private.random_slug() returns text language sql as $$
-  select substr(replace(encode(gen_random_bytes(9), 'base64'), '/', ''), 1, 10);
+  select substr(replace(gen_random_uuid()::text, '-', ''), 1, 10);
 $$;
 
 -- ─── name pool (massively expanded — ~1 billion+ unique pairs) ────────────────
