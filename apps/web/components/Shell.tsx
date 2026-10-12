@@ -2,12 +2,12 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { PenLine, Home, MessageCircle, Compass, User, Settings, Shuffle, Sparkles } from 'lucide-react';
+import { PenLine, Home, MessageCircle, Compass, User, Settings, Shuffle, Sparkles, Link2 } from 'lucide-react';
 import { themeIds } from '@inkognito/core';
 import { useTheme } from './ThemeProvider';
 import { ConnectionBanner } from './ConnectionBanner';
 const mobile = [['/void','Void',Home],['/discover','Discover',Compass],['/random','Random',Shuffle],['/create','Create',PenLine],['/me','Me',User]] as const;
-const desk = [['/void','Void',Home],['/discover','Discover',Compass],['/random','Random',Shuffle],['/messages','Whispers',MessageCircle],['/ai','AI Companion',Sparkles],['/create','Create',PenLine],['/me','Me',User],['/settings','Settings',Settings]] as const;
+const desk = [['/void','Void',Home],['/discover','Discover',Compass],['/random','Random',Shuffle],['/messages','Whispers',MessageCircle],['/ai','AI Companion',Sparkles],['/anon/create','Anon Inbox',Link2],['/create','Create',PenLine],['/me','Me',User],['/settings','Settings',Settings]] as const;
 const label = (id: string) => id.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname(); const { theme, setTheme } = useTheme();
