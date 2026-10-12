@@ -21,13 +21,21 @@ const desk = [
   ['/settings', 'Settings', Settings],
 ] as const;
 
-const hubItems = [
+interface HubItem {
+  href: string;
+  label: string;
+  desc: string;
+  icon: React.ComponentType<{ size?: number }>;
+  accent?: boolean;
+}
+
+const hubItems: HubItem[] = [
   { href: '/create', label: 'Create Post', desc: 'Share what you can’t say', icon: PenLine, accent: true },
   { href: '/anon/create', label: 'Anon Inbox', desc: 'Get your secret Q&A link', icon: Link2 },
   { href: '/ai', label: 'AI Companion', desc: 'Safe, private reflection', icon: Sparkles },
   { href: '/messages', label: 'Whispers', desc: 'Encrypted direct replies', icon: MessageCircle },
   { href: '/settings', label: 'Settings', desc: 'Themes & privacy controls', icon: Settings },
-] as const;
+];
 
 const label = (id: string) => id.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
 
