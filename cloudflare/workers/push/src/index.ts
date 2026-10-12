@@ -27,7 +27,31 @@ async function send(env: Env, r: Row): Promise<'ok' | 'gone' | 'retry'> {
 }
 
 export default {
-  async fetch(req: Request): Promise<Response> { return new URL(req.url).pathname === '/health' ? new Response('ok') : new Response('Not found', { status: 404 }); },
+  async fetch(req: Request, env: Env): Promise<Response> {
+    const url = new URL(req.url);
+    if (url.pathname === '/health') return new Response('ok');
+    if (url.pathname === '/send') {
+      try {
+        const rows = (await rpc<Row[]>(env, 'push_take_batch', { p_limit: 100 })) ?? [];
+        const delivered = new Set<number>();
+        for (let i = 0; i < rows.length; i += 10) {
+          await Promise.all(rows.slice(i, i + 10).map(async r => {
+            const out = await send(env, r);
+            if (out === 'ok') delivered.add(r.id);
+            else if (out === 'gone') await rpc(env, 'push_drop_subscription', { p_endpoint: r.endpoint }).catch(() => {});
+          }));
+        }
+        if (delivered.size) await rpc(env, 'push_mark_sent', { p_ids: [...delivered] });
+        await rpc(env, 'push_prune').catch(() => {});
+        return new Response(JSON.stringify({ pending: rows.length, delivered: delivered.size }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err?.message || String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+    return new Response('Not found', { status: 404 });
+  },
   async scheduled(_c: ScheduledController, env: Env): Promise<void> {
     const rows = (await rpc<Row[]>(env, 'push_take_batch', { p_limit: 100 })) ?? [];
     const delivered = new Set<number>();

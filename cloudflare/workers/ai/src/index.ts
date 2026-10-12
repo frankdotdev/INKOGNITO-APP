@@ -88,6 +88,23 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url); const h = cors(req, env);
     if (url.pathname === '/health') return new Response('ok');
+    if (url.pathname === '/ai/diagnostic') {
+      const groqRes = await fetch(`${env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1'}/models`, {
+        headers: { Authorization: `Bearer ${env.GROQ_API_KEY}` }
+      }).then(r => r.json()).catch(e => ({ error: String(e) }));
+
+      const geminiRes = await fetch(`${env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com'}/v1beta/models?key=${env.GEMINI_API_KEY}`)
+        .then(r => r.json()).catch(e => ({ error: String(e) }));
+
+      return json({
+        hasGroqKey: !!env.GROQ_API_KEY,
+        hasGeminiKey: !!env.GEMINI_API_KEY,
+        configuredGroqModel: env.AI_GROQ_MODEL,
+        configuredGeminiModel: env.AI_GEMINI_MODEL,
+        groqModels: groqRes,
+        geminiModels: geminiRes,
+      }, 200, h);
+    }
     if (!url.pathname.startsWith('/ai/')) return new Response('Not found', { status: 404 });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
     const origin = req.headers.get('Origin'); if (origin && !h['Access-Control-Allow-Origin']) return json({ error: 'forbidden' }, 403, h);

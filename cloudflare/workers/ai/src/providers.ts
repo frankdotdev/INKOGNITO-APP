@@ -10,13 +10,22 @@ export async function streamGroq(env: Env, msgs: Msg[], onToken: (t: string) => 
   const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   let started = false, text = '', usage: { prompt_tokens?: number; completion_tokens?: number } | undefined;
   try {
-    const res = await fetch(`${env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1'}/chat/completions`, {
-      method: 'POST', signal: ctl.signal, headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: env.AI_GROQ_MODEL, messages: msgs, stream: true, stream_options: { include_usage: true }, max_tokens: MAX_TOKENS, temperature: 0.7 }),
-    });
-    if (!res.ok || !res.body) {
-      const txt = await res.text().catch(() => '');
-      throw new ProviderError(`groq ${res.status}: ${txt.slice(0, 120)}`, false);
+    const candidateModels = Array.from(new Set([env.AI_GROQ_MODEL, 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-8b-8192'].filter(Boolean)));
+    let res: Response | null = null;
+    let lastErrTxt = '';
+    for (const m of candidateModels) {
+      const r = await fetch(`${env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1'}/chat/completions`, {
+        method: 'POST', signal: ctl.signal, headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: m, messages: msgs, stream: true, stream_options: { include_usage: true }, max_tokens: MAX_TOKENS, temperature: 0.7 }),
+      });
+      if (r.ok) { res = r; break; }
+      lastErrTxt = await r.text().catch(() => '');
+      if (r.status !== 404) {
+        throw new ProviderError(`groq ${r.status}: ${lastErrTxt.slice(0, 140)}`, false);
+      }
+    }
+    if (!res || !res.body) {
+      throw new ProviderError(`groq 404: ${lastErrTxt.slice(0, 140) || 'no model accessible with key'}`, false);
     }
     const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
     for (;;) {
@@ -37,7 +46,7 @@ export async function streamGroq(env: Env, msgs: Msg[], onToken: (t: string) => 
     return { text, tokensIn: usage?.prompt_tokens ?? est(msgs.map(m => m.content).join(' ')), tokensOut: usage?.completion_tokens ?? est(text), provider: 'groq' };
   } catch (e) {
     if (e instanceof ProviderError) throw e;
-    if (started) return { text, tokensIn: est(msgs.map(m => m.content).join(' ')), tokensOut: est(text), provider: 'groq' }; // connection broke mid-reply: keep what was shown
+    if (started) return { text, tokensIn: est(msgs.map(m => m.content).join(' ')), tokensOut: est(text), provider: 'groq' };
     throw new ProviderError('groq failed', false);
   } finally { clearTimeout(timer); }
 }
@@ -47,14 +56,27 @@ export async function geminiComplete(env: Env, msgs: Msg[]): Promise<Result> {
   const system = msgs.filter(m => m.role === 'system').map(m => m.content).join('\n\n');
   const contents = msgs.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
   const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(`${env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com'}/v1beta/models/${env.AI_GEMINI_MODEL}:generateContent`, {
-      method: 'POST', signal: ctl.signal, headers: { 'x-goog-api-key': env.GEMINI_API_KEY, 'Content-Type': 'application/json' },
+  const cleanModel = (env.AI_GEMINI_MODEL || 'gemini-1.5-flash').replace(/^models\//, '');
+  const base = env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com';
+
+  const tryCall = async (version: 'v1beta' | 'v1', m: string) => {
+    return fetch(`${base}/${version}/models/${m}:generateContent?key=${env.GEMINI_API_KEY}`, {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { maxOutputTokens: MAX_TOKENS } }),
     });
+  };
+
+  try {
+    let res = await tryCall('v1beta', cleanModel);
+    if (!res.ok) res = await tryCall('v1', cleanModel);
+    if (!res.ok) res = await tryCall('v1beta', 'gemini-1.5-flash');
+    if (!res.ok) res = await tryCall('v1', 'gemini-1.5-flash');
+    if (!res.ok) res = await tryCall('v1beta', 'gemini-2.0-flash');
+
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
-      throw new ProviderError(`gemini ${res.status}: ${txt.slice(0, 120)}`, false);
+      throw new ProviderError(`gemini ${res.status}: ${txt.slice(0, 160)}`, false);
     }
     const j: any = await res.json();
     const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? '').join('').trim();
